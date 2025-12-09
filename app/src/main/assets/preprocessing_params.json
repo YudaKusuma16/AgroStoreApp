@@ -1,0 +1,10 @@
+{
+  "tfidf_vocab_size": 8000,
+  "tfidf_max_features": 8000,
+  "tfidf_ngram_range": [
+    1,
+    2
+  ],
+  "embedding_dim": 300,
+  "total_features": 8300
+}

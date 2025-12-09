@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew:*)",
+      "Bash(php:*)",
+      "Bash(dir:*)",
+      "Bash(curl:*)",
+      "Bash(.gradlew:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
