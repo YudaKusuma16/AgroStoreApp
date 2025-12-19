@@ -100,7 +100,17 @@ interface AgroRepository {
     fun getOrders(): Flow<List<Order>>
 
     /**
+     * Get all orders for the seller (products sold by current seller).
+     */
+    fun getSellerOrders(): Flow<List<Order>>
+
+    /**
      * Update user profile information.
      */
     suspend fun updateUser(user: User): Flow<Result<Boolean>>
+
+    /**
+     * Upload image file to server and return URL.
+     */
+    suspend fun uploadImage(imagePath: String): Flow<Result<String>>
 }

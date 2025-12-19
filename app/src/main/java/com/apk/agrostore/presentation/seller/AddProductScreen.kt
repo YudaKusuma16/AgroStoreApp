@@ -30,11 +30,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.apk.agrostore.presentation.navigation.Screen
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddProductScreen(
     navController: NavController,
+    parentNavController: NavController? = null,
     viewModel: AddProductViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -44,6 +46,8 @@ fun AddProductScreen(
     val stock by viewModel.stock.collectAsStateWithLifecycle()
     val description by viewModel.description.collectAsStateWithLifecycle()
     val imageUrl by viewModel.imageUrl.collectAsStateWithLifecycle()
+    val isUploadingImage by viewModel.isUploadingImage.collectAsStateWithLifecycle()
+    val selectedImagePath by viewModel.selectedImagePath.collectAsStateWithLifecycle()
 
     // Image Picker
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
@@ -54,7 +58,28 @@ fun AddProductScreen(
     ) { uri ->
         uri?.let {
             selectedImageUri = it
-            viewModel.onImageUrlChange(it.toString())
+            // Convert URI to path for upload
+            val path = uri.path?.let { path ->
+                when(uri.scheme) {
+                    "file" -> path
+                    "content" -> {
+                        // Handle content URI
+                        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                            val tempFile =
+                                File(context.cacheDir, "temp_image_${System.currentTimeMillis()}")
+                            tempFile.outputStream().use { outputStream ->
+                                inputStream.copyTo(outputStream)
+                            }
+                            tempFile.absolutePath
+                        }
+                    }
+                    else -> null
+                }
+            }
+
+            if (path != null) {
+                viewModel.selectAndUploadImage(path)
+            }
         }
     }
 
@@ -70,13 +95,20 @@ fun AddProductScreen(
             TopAppBar(
                 title = { Text("Tambah Produk") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
+                    IconButton(onClick = {
+                        if (parentNavController != null) {
+                            parentNavController.navigateUp()
+                        } else {
+                            navController.navigateUp()
+                        }
+                    }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
-                }
+                },
+                windowInsets = WindowInsets(0)
             )
         }
     ) { paddingValues ->
@@ -93,7 +125,11 @@ fun AddProductScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp)
+                    .padding(
+                        start = 16.dp,
+                        end = 16.dp,
+                        bottom = 55.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                    )
             ) {
                 // Image Picker Section
                 Card(
@@ -116,7 +152,21 @@ fun AddProductScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (selectedImageUri != null || imageUrl.isNotBlank()) {
+                        if (isUploadingImage) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(48.dp),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Mengupload gambar...",
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        } else if (selectedImageUri != null || imageUrl.isNotBlank()) {
                             AsyncImage(
                                 model = selectedImageUri ?: imageUrl,
                                 contentDescription = "Product Image",
@@ -233,7 +283,13 @@ fun AddProductScreen(
 
                 // Cancel Button
                 OutlinedButton(
-                    onClick = { navController.navigateUp() },
+                    onClick = {
+                        if (parentNavController != null) {
+                            parentNavController.navigateUp()
+                        } else {
+                            navController.navigateUp()
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
@@ -248,7 +304,11 @@ fun AddProductScreen(
         if (uiState.isSaved) {
             AlertDialog(
                 onDismissRequest = {
-                    navController.navigateUp()
+                    if (parentNavController != null) {
+                        parentNavController.navigateUp()
+                    } else {
+                        navController.navigateUp()
+                    }
                     viewModel.resetSaveState()
                 },
                 icon = {
@@ -274,7 +334,11 @@ fun AddProductScreen(
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            navController.navigateUp()
+                            if (parentNavController != null) {
+                                parentNavController.navigateUp()
+                            } else {
+                                navController.navigateUp()
+                            }
                             viewModel.resetSaveState()
                         }
                     ) {

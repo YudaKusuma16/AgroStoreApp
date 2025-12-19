@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import android.util.Log
+import java.io.File
 import javax.inject.Inject
 
 /**
@@ -67,6 +68,14 @@ class AddProductViewModel @Inject constructor(
     private val _imageUrl = MutableStateFlow("")
     val imageUrl: StateFlow<String> = _imageUrl.asStateFlow()
 
+    // Track selected image URI for upload
+    private val _selectedImagePath = MutableStateFlow<String?>(null)
+    val selectedImagePath: StateFlow<String?> = _selectedImagePath.asStateFlow()
+
+    // Track upload state
+    private val _isUploadingImage = MutableStateFlow(false)
+    val isUploadingImage: StateFlow<Boolean> = _isUploadingImage.asStateFlow()
+
     /**
      * Update product name.
      */
@@ -113,6 +122,46 @@ class AddProductViewModel @Inject constructor(
      */
     fun onImageUrlChange(newImageUrl: String) {
         _imageUrl.value = newImageUrl
+    }
+
+    /**
+     * Select image and upload to server.
+     */
+    fun selectAndUploadImage(imagePath: String) {
+        _selectedImagePath.value = imagePath
+
+        viewModelScope.launch {
+            _isUploadingImage.value = true
+
+            try {
+                repository.uploadImage(imagePath).collect { result ->
+                    if (result.isSuccess) {
+                        _imageUrl.value = result.getOrNull() ?: ""
+                        Log.d("AddProductViewModel", "Image uploaded: ${_imageUrl.value}")
+                    } else {
+                        Log.e("AddProductViewModel", "Failed to upload image", result.exceptionOrNull())
+                        _uiState.value = _uiState.value.copy(
+                            error = "Failed to upload image: ${result.exceptionOrNull()?.message}"
+                        )
+                    }
+                    _isUploadingImage.value = false
+                }
+            } catch (e: Exception) {
+                Log.e("AddProductViewModel", "Error uploading image", e)
+                _uiState.value = _uiState.value.copy(
+                    error = "Error uploading image: ${e.message}"
+                )
+                _isUploadingImage.value = false
+            }
+        }
+    }
+
+    /**
+     * Clear selected image.
+     */
+    fun clearSelectedImage() {
+        _selectedImagePath.value = null
+        _imageUrl.value = ""
     }
 
     /**

@@ -10,7 +10,9 @@ data class Order(
     val status: String, // e.g., "Menunggu Pembayaran", "Dibayar", "Dikemas", "Dikirim", "Selesai"
     val date: String,
     val shippingAddress: String = "",
-    val paymentMethod: String = ""
+    val paymentMethod: String = "",
+    val buyerName: String = "",
+    val buyerId: String = ""
 ) {
     /**
      * Get formatted total price in Indonesian Rupiah format.

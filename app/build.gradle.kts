@@ -54,6 +54,7 @@ dependencies {
 
     // Hilt
     implementation(libs.hilt.android)
+    implementation(libs.androidx.appcompat)
     kapt(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
 
@@ -76,8 +77,6 @@ dependencies {
     // Material Icons Extended
     implementation(libs.androidx.material.icons.extended)
 
-    implementation("com.airbnb.android:lottie-compose:6.4.0")
-    implementation("com.airbnb.android:lottie:6.4.0")
 
     // TensorFlow Lite
     implementation("org.tensorflow:tensorflow-lite:2.15.0")
@@ -96,4 +95,5 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+    implementation(libs.androidx.constraintlayout)
 }

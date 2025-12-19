@@ -1,5 +1,6 @@
 package com.apk.agrostore.presentation.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.apk.agrostore.domain.model.Product
@@ -47,16 +48,29 @@ class HomeViewModel @Inject constructor(
 
     /**
      * Search products by query.
+     * Returns a Job that can be cancelled
      */
-    fun searchProducts(query: String) = viewModelScope.launch {
+    fun searchProducts(query: String): Job {
         _uiState.value = _uiState.value.copy(isLoading = true)
+        Log.d("HomeViewModel", "Searching for: $query")
 
-        repository.searchProducts(query).collect { products ->
-            _uiState.value = _uiState.value.copy(
-                products = products,
-                isLoading = false,
-                searchQuery = query
-            )
+        return viewModelScope.launch {
+            try {
+                repository.searchProducts(query).collect { products ->
+                    Log.d("HomeViewModel", "Found ${products.size} products")
+                    _uiState.value = _uiState.value.copy(
+                        products = products,
+                        isLoading = false,
+                        searchQuery = query
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Error searching products", e)
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = e.message
+                )
+            }
         }
     }
 

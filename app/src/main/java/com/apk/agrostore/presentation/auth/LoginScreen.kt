@@ -1,15 +1,17 @@
 package com.apk.agrostore.presentation.auth
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -19,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.apk.agrostore.R
 import com.apk.agrostore.presentation.navigation.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,20 +70,13 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Title
-        Text(
-            text = "AgroStore",
-            fontSize = 36.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Selamat Datang",
-            fontSize = 24.sp,
-            color = MaterialTheme.colorScheme.onBackground
+        // Logo
+        Image(
+            painter = painterResource(id = R.drawable.agrostore_logo),
+            contentDescription = "AgroStore Logo",
+            modifier = Modifier
+                .width(280.dp)
+                .height(280.dp)
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -98,7 +94,14 @@ fun LoginScreen(
             },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true
+            singleLine = true,
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.05f),
+                focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f)
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -117,7 +120,14 @@ fun LoginScreen(
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true
+            singleLine = true,
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.05f),
+                focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f)
+            )
         )
 
         Spacer(modifier = Modifier.height(32.dp))

@@ -11,6 +11,12 @@ import com.apk.agrostore.data.remote.ProductDetailResponse
 import com.apk.agrostore.data.remote.ProductResponse
 import com.apk.agrostore.data.remote.OrderResponse
 import com.apk.agrostore.data.remote.OrderItemResponse
+import com.apk.agrostore.data.remote.ProductUpdateRequest
+import com.apk.agrostore.data.remote.ImageUploadResponse
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import java.io.File
 import com.apk.agrostore.domain.model.CartItem
 import com.apk.agrostore.domain.model.Order
 import com.apk.agrostore.domain.model.Product
@@ -59,7 +65,7 @@ class AgroRepositoryImpl @Inject constructor() : AgroRepository {
                     }
                     Log.d("AgroRepository", "Fetched ${productList.size} products from API")
                     productList.forEach { product ->
-                        Log.d("AgroRepository", "Product: ${product.id} - ${product.name} (seller: ${product.sellerId})")
+                        Log.d("AgroRepository", "Product: ${product.id} - ${product.name} (seller: ${product.sellerId}) - Image: ${product.imageUrl}")
                     }
                     emit(productList)
                 }
@@ -101,10 +107,14 @@ class AgroRepositoryImpl @Inject constructor() : AgroRepository {
 
     override suspend fun searchProducts(query: String): Flow<List<Product>> = flow {
         try {
+            Log.d("AgroRepository", "Searching products with query: $query")
             val response = apiService.getProducts(search = query)
+            Log.d("AgroRepository", "Search response code: ${response.code()}")
+
             if (response.isSuccessful) {
                 response.body()?.let { products ->
-                    emit(products.map {
+                    Log.d("AgroRepository", "Search successful, found ${products.size} products")
+                    val productList = products.map {
                         Product(
                             id = it.id,
                             name = it.name,
@@ -115,12 +125,15 @@ class AgroRepositoryImpl @Inject constructor() : AgroRepository {
                             imageUrl = it.image_url ?: "", // Handle null value
                             sellerId = it.seller_id
                         )
-                    })
-                }
+                    }
+                    emit(productList)
+                } ?: emit(emptyList())
             } else {
+                Log.e("AgroRepository", "Search failed: ${response.code()} - ${response.message()}")
                 emit(emptyList())
             }
         } catch (e: Exception) {
+            Log.e("AgroRepository", "Exception during search", e)
             emit(emptyList())
         }
     }
@@ -286,17 +299,43 @@ class AgroRepositoryImpl @Inject constructor() : AgroRepository {
 
     override suspend fun updateProduct(product: Product): Flow<Result<Boolean>> = flow {
         try {
-            val response = apiService.updateProduct(product.id, product)
             Log.d("AgroRepository", "Updating product ${product.id}")
 
+            // Convert Product to ProductUpdateRequest
+            val updateRequest = ProductUpdateRequest(
+                name = product.name,
+                category = product.category,
+                price = product.price,
+                description = product.description,
+                stock = product.stock,
+                imageUrl = product.imageUrl,
+                sellerId = product.sellerId
+            )
+
+            Log.d("AgroRepository", "Request body: ${gson.toJson(updateRequest)}")
+
+            val response = apiService.updateProduct(product.id, updateRequest)
+
+            Log.d("AgroRepository", "Response code: ${response.code()}")
+            Log.d("AgroRepository", "Response message: ${response.message()}")
+            Log.d("AgroRepository", "Response successful: ${response.isSuccessful}")
+
             if (response.isSuccessful) {
-                Log.d("AgroRepository", "Product updated successfully")
+                val responseBody = response.body()
+                Log.d("AgroRepository", "Response body: ${gson.toJson(responseBody)}")
                 emit(Result.success(true))
             } else {
                 val errorBody = response.errorBody()?.string()
-                val error = gson.fromJson(errorBody, ErrorResponse::class.java)
-                Log.e("AgroRepository", "Failed to update product: ${error?.error}")
-                emit(Result.failure(Exception(error?.error ?: "Failed to update product")))
+                Log.e("AgroRepository", "Error response body: $errorBody")
+
+                try {
+                    val error = gson.fromJson(errorBody, ErrorResponse::class.java)
+                    Log.e("AgroRepository", "Failed to update product: ${error?.error}")
+                    emit(Result.failure(Exception(error?.error ?: "Failed to update product")))
+                } catch (e: Exception) {
+                    Log.e("AgroRepository", "Failed to parse error response", e)
+                    emit(Result.failure(Exception("Server error: ${response.code()}")))
+                }
             }
         } catch (e: Exception) {
             Log.e("AgroRepository", "Error updating product", e)
@@ -366,7 +405,9 @@ class AgroRepositoryImpl @Inject constructor() : AgroRepository {
                                 .format(SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
                                     .parse(order.created_at) ?: Date()),
                             shippingAddress = order.shipping_address ?: "",
-                            paymentMethod = order.payment_method ?: ""
+                            paymentMethod = order.payment_method ?: "",
+                            buyerName = order.buyer_name ?: "",
+                            buyerId = order.buyer_id ?: ""
                         )
                     }
                     emit(formattedOrders)
@@ -379,10 +420,123 @@ class AgroRepositoryImpl @Inject constructor() : AgroRepository {
         }
     }
 
+    override fun getSellerOrders(): Flow<List<Order>> = flow {
+        try {
+            val currentUser = _currentUser.value
+                ?: throw Exception("No user logged in")
+
+            val response = apiService.getSellerOrders(currentUser.id)
+
+            if (response.isSuccessful) {
+                response.body()?.let { orders ->
+                    val formattedOrders = orders.map { order ->
+                        // Convert API order items to CartItem format
+                        val cartItems = order.items.map { item ->
+                            CartItem(
+                                product = Product(
+                                    id = item.product_id,
+                                    name = item.product_name,
+                                    category = "",
+                                    price = item.price,
+                                    description = "",
+                                    stock = 0,
+                                    imageUrl = item.product_image ?: "",
+                                    sellerId = ""
+                                ),
+                                quantity = item.quantity
+                            )
+                        }
+
+                        Order(
+                            id = order.id,
+                            items = cartItems,
+                            total = order.total,
+                            status = order.status,
+                            date = SimpleDateFormat("dd MMM yyyy", Locale("id", "ID"))
+                                .format(SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                                    .parse(order.created_at) ?: Date()),
+                            shippingAddress = order.shipping_address ?: "",
+                            paymentMethod = order.payment_method ?: "",
+                            buyerName = order.buyer_name ?: "",
+                            buyerId = order.buyer_id ?: ""
+                        )
+                    }
+                    emit(formattedOrders)
+                }
+            } else {
+                emit(emptyList())
+            }
+        } catch (e: Exception) {
+            Log.e("AgroRepository", "Error fetching seller orders", e)
+            emit(emptyList())
+        }
+    }
+
     override suspend fun updateUser(user: User): Flow<Result<Boolean>> = flow {
         // Note: Update user API endpoint not implemented yet
         // For now, just update local state
         _currentUser.value = user
         emit(Result.success(true))
+    }
+
+    override suspend fun uploadImage(imagePath: String): Flow<Result<String>> = flow {
+        try {
+            val file = File(imagePath)
+            if (!file.exists()) {
+                emit(Result.failure(Exception("File not found")))
+                return@flow
+            }
+
+            // Create request body from file
+            val requestFile = RequestBody
+                .create("image/*".toMediaTypeOrNull(), file)
+
+            // Create multipart body part
+            val body = MultipartBody.Part
+                .createFormData("image", file.name, requestFile)
+
+            // Make API call
+            val response = apiService.uploadImage(body)
+
+            if (response.isSuccessful) {
+                response.body()?.let { uploadResponse ->
+                    Log.d("AgroRepository", "Image uploaded successfully: ${uploadResponse.url}")
+                    emit(Result.success(uploadResponse.url))
+                } ?: emit(Result.failure(Exception("Empty response")))
+            } else {
+                val errorBody = response.errorBody()?.string()
+                Log.e("AgroRepository", "Upload failed. Response code: ${response.code()}, Body: $errorBody")
+
+                if (errorBody.isNullOrEmpty()) {
+                    emit(Result.failure(Exception("Upload failed with code ${response.code()}")))
+                } else {
+                    // Try to parse as JSON first
+                    try {
+                        val error = gson.fromJson(errorBody, ErrorResponse::class.java)
+                        emit(Result.failure(Exception(error?.error ?: "Upload failed")))
+                    } catch (e: Exception) {
+                        // If not JSON, treat as plain text error message
+                        emit(Result.failure(Exception("Upload failed: $errorBody")))
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("AgroRepository", "Error uploading image", e)
+            Log.e("AgroRepository", "Error details: ${e.javaClass.simpleName}: ${e.message}")
+            when (e) {
+                is java.net.SocketTimeoutException -> {
+                    emit(Result.failure(Exception("Upload timeout. Please check your connection and try again.")))
+                }
+                is java.net.UnknownHostException -> {
+                    emit(Result.failure(Exception("Cannot connect to server. Please check your internet connection.")))
+                }
+                is java.net.ConnectException -> {
+                    emit(Result.failure(Exception("Connection refused. Please check if the server is running.")))
+                }
+                else -> {
+                    emit(Result.failure(Exception("Upload failed: ${e.message}")))
+                }
+            }
+        }
     }
 }

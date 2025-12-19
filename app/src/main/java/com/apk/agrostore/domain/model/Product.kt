@@ -12,8 +12,8 @@ data class Product(
     val price: Double,
     val description: String,
     val stock: Int,
-    @SerializedName("imageUrl")
-    val imageUrl: String = "", // Default empty string
-    @SerializedName("sellerId")
+    @SerializedName("image_url")
+    val imageUrl: String = "", // Default empty string, matching API field name
+    @SerializedName("seller_id")
     val sellerId: String
 )

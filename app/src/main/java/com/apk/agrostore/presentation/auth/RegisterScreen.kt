@@ -1,6 +1,8 @@
 package com.apk.agrostore.presentation.auth
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -11,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -20,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.apk.agrostore.R
 import com.apk.agrostore.presentation.navigation.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,27 +62,10 @@ fun RegisterScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp)
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        // Top Bar with Back Button
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = { navController.navigateUp() }) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Back"
-                )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Buat Akun Baru",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -86,15 +73,16 @@ fun RegisterScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // App Title
-            Text(
-                text = "AgroStore",
-                fontSize = 36.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+            // Logo
+            Image(
+                painter = painterResource(id = R.drawable.agrostore_logo),
+                contentDescription = "AgroStore Logo",
+                modifier = Modifier
+                    .width(280.dp)
+                    .height(280.dp)
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             // Name TextField
             OutlinedTextField(
@@ -108,7 +96,14 @@ fun RegisterScreen(
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.05f),
+                    focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f)
+                )
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -126,7 +121,14 @@ fun RegisterScreen(
                 },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.05f),
+                    focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f)
+                )
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -145,7 +147,14 @@ fun RegisterScreen(
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.05f),
+                    focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f)
+                )
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -204,28 +213,6 @@ fun RegisterScreen(
             }
 
             Spacer(modifier = Modifier.height(32.dp))
-
-            // Info Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = "Informasi:",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("• Gunakan email yang valid")
-                    Text("• Password minimal 6 karakter")
-                    Text("• Akun baru akan terdaftar sebagai Pembeli")
-                }
-            }
         }
     }
 

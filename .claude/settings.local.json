@@ -5,7 +5,12 @@
       "Bash(php:*)",
       "Bash(dir:*)",
       "Bash(curl:*)",
-      "Bash(.gradlew:*)"
+      "Bash(.gradlew:*)",
+      "Bash(ls:*)",
+      "Bash(powershell:*)",
+      "Bash(net start:*)",
+      "Bash(del:*)",
+      "Bash(mysql:*)"
     ],
     "deny": [],
     "ask": []

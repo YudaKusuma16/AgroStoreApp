@@ -1,5 +1,6 @@
 package com.apk.agrostore.presentation.healthbot
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,12 +15,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.apk.agrostore.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -117,11 +121,15 @@ fun HealthBotScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.padding(24.dp)
                     ) {
-                        Text(
-                            text = "🤖",
-                            fontSize = 64.sp
+                        Image(
+                            painter = painterResource(id = R.drawable.doctor),
+                            contentDescription = "HealthBot Doctor",
+                            modifier = Modifier
+                                .size(170.dp)
+                                .padding(6.dp),
+                            contentScale = ContentScale.Fit
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
                         Text(
                             text = "Selamat Datang di HealthBot!",
                             style = MaterialTheme.typography.headlineMedium,

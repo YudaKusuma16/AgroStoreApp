@@ -23,6 +23,7 @@ import com.apk.agrostore.presentation.profile.UpdateProfileScreen
 import com.apk.agrostore.presentation.seller.AddProductScreen
 import com.apk.agrostore.presentation.seller.EditProductScreen
 import com.apk.agrostore.presentation.seller.SellerDashboardScreen
+import com.apk.agrostore.presentation.seller.SellerParentScreen
 import com.apk.agrostore.presentation.healthbot.HealthBotScreen
 
 @Composable
@@ -51,7 +52,7 @@ fun AgroNavGraph(navController: NavHostController) {
         }
 
         composable(Screen.SellerDashboard.route) {
-            SellerDashboardScreen(navController = navController)
+            SellerParentScreen(navController = navController)
         }
 
         composable(Screen.AddProduct.route) {
@@ -87,10 +88,6 @@ fun AgroNavGraph(navController: NavHostController) {
 
         composable(Screen.HealthBot.route) {
             HealthBotScreen(navController = navController)
-        }
-
-        composable(Screen.SellerDashboard.route) {
-            SellerDashboardScreen(navController = navController)
         }
     }
 }

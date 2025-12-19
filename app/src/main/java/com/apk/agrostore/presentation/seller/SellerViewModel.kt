@@ -113,6 +113,7 @@ class SellerViewModel @Inject constructor(
                             showDeleteDialog = false
                         )
                         _selectedProductId.value = null
+                        // deleteSuccess already set to true above, which will trigger refresh via LaunchedEffect
                     } else {
                         _uiState.value = _uiState.value.copy(
                             isDeleting = false,

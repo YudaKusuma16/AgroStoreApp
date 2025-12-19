@@ -27,11 +27,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.apk.agrostore.presentation.navigation.Screen
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProductScreen(
     navController: NavController,
+    parentNavController: NavController? = null,
     viewModel: EditProductViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -42,23 +44,50 @@ fun EditProductScreen(
     val description by viewModel.description.collectAsStateWithLifecycle()
     val imageUrl by viewModel.imageUrl.collectAsStateWithLifecycle()
     val originalProduct by viewModel.originalProduct.collectAsStateWithLifecycle()
+    val isUploadingImage by viewModel.isUploadingImage.collectAsStateWithLifecycle()
 
     // Image Picker
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    val context = LocalContext.current
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         uri?.let {
             selectedImageUri = it
-            viewModel.onImageUrlChange(it.toString())
+            // Convert URI to path for upload
+            val path = uri.path?.let { path ->
+                when(uri.scheme) {
+                    "file" -> path
+                    "content" -> {
+                        // Handle content URI
+                        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                            val tempFile =
+                                File(context.cacheDir, "temp_image_${System.currentTimeMillis()}")
+                            tempFile.outputStream().use { outputStream ->
+                                inputStream.copyTo(outputStream)
+                            }
+                            tempFile.absolutePath
+                        }
+                    }
+                    else -> null
+                }
+            }
+
+            if (path != null) {
+                viewModel.selectAndUploadImage(path)
+            }
         }
     }
 
     // Handle update success
     LaunchedEffect(uiState.isUpdated) {
         if (uiState.isUpdated) {
-            navController.navigateUp()
+            if (parentNavController != null) {
+                parentNavController.navigateUp()
+            } else {
+                navController.navigateUp()
+            }
             viewModel.resetSaveState()
         }
     }
@@ -66,7 +95,11 @@ fun EditProductScreen(
     // Handle product not found
     LaunchedEffect(uiState.error) {
         if (uiState.error == "Produk tidak ditemukan") {
-            navController.navigateUp()
+            if (parentNavController != null) {
+                parentNavController.navigateUp()
+            } else {
+                navController.navigateUp()
+            }
         }
     }
 
@@ -75,7 +108,13 @@ fun EditProductScreen(
             TopAppBar(
                 title = { Text("Edit Produk") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
+                    IconButton(onClick = {
+                        if (parentNavController != null) {
+                            parentNavController.navigateUp()
+                        } else {
+                            navController.navigateUp()
+                        }
+                    }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back"
@@ -132,7 +171,21 @@ fun EditProductScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (selectedImageUri != null || imageUrl.isNotBlank()) {
+                        if (isUploadingImage) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(48.dp),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Mengupload gambar...",
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        } else if (selectedImageUri != null || imageUrl.isNotBlank()) {
                             AsyncImage(
                                 model = selectedImageUri ?: imageUrl,
                                 contentDescription = "Product Image",
@@ -249,7 +302,13 @@ fun EditProductScreen(
 
                 // Cancel Button
                 OutlinedButton(
-                    onClick = { navController.navigateUp() },
+                    onClick = {
+                        if (parentNavController != null) {
+                            parentNavController.navigateUp()
+                        } else {
+                            navController.navigateUp()
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(

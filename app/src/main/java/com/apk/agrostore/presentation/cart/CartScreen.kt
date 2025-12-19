@@ -124,24 +124,6 @@ fun CartScreen(
                     Column(
                         modifier = Modifier.padding(16.dp)
                     ) {
-                        // Total Price
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Total:",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = uiState.totalPrice.toRupiah(),
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
 
                         Spacer(modifier = Modifier.height(16.dp))
 

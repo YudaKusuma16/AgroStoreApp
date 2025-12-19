@@ -28,8 +28,6 @@ import coil.compose.SubcomposeAsyncImage
 import com.apk.agrostore.presentation.common.toRupiah
 import com.apk.agrostore.presentation.navigation.Screen
 import kotlinx.coroutines.delay
-import com.airbnb.lottie.compose.*
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

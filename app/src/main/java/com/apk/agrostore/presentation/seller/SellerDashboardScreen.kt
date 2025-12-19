@@ -12,6 +12,10 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,13 +36,17 @@ import com.apk.agrostore.presentation.navigation.Screen
 @Composable
 fun SellerDashboardScreen(
     navController: NavController,
-    viewModel: SellerViewModel = hiltViewModel()
+    parentNavController: NavController? = null,
+    viewModel: SellerViewModel = hiltViewModel(),
+    showBottomBar: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var selectedTab by remember { mutableStateOf(0) }
 
     // Handle delete success and auto refresh on screen entry
     LaunchedEffect(uiState.deleteSuccess) {
         if (uiState.deleteSuccess) {
+            viewModel.refresh()
             viewModel.resetDeleteState()
         }
     }
@@ -49,37 +57,46 @@ fun SellerDashboardScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Dashboard Penjual") },
-                navigationIcon = {
-                    // No navigation icon (no logout)
-                },
-                actions = {
-                    IconButton(onClick = { navController.navigate(Screen.Profile.route) }) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Profile",
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
+        bottomBar = {
+            if (showBottomBar) {
+                NavigationBar {
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Add, contentDescription = "Tambah Produk") },
+                        label = { Text("Tambah Produk") },
+                        selected = selectedTab == 0,
+                        onClick = {
+                            selectedTab = 0
+                            if (parentNavController != null) {
+                                parentNavController.navigate(Screen.AddProduct.route)
+                            } else {
+                                navController.navigate(Screen.AddProduct.route)
+                            }
+                        }
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Receipt, contentDescription = "Transaksi") },
+                        label = { Text("Transaksi") },
+                        selected = selectedTab == 1,
+                        onClick = {
+                            selectedTab = 1
+                            if (parentNavController != null) {
+                                parentNavController.navigate("transaction") {
+                                    popUpTo("dashboard") { inclusive = false }
+                                }
+                            } else {
+                                navController.navigate(Screen.Transaction.route)
+                            }
+                        }
+                    )
+                }
+            }
         }
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize()) {
             // Main Content
             if (uiState.isLoading) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
@@ -108,57 +125,82 @@ fun SellerDashboardScreen(
                     )
                 }
             } else {
-                LazyColumn(
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(paddingValues)
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Header
-                    item {
-                        Column {
-                            Text(
-                                text = "Produk Saya",
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "${uiState.products.size} produk",
-                                fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                        }
+                    // HEADER
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 16.dp)
+                    ) {
+                        Text(
+                            text = "List Produk",
+                            fontSize = 23.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "${uiState.products.size} Produk",
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
 
-                    // Products List
-                    items(uiState.products) { product ->
-                        SellerProductCard(
-                            product = product,
-                            onDelete = { viewModel.showDeleteConfirmation(product.id) },
-                            onEdit = {
-                                // Navigate to edit product
-                                navController.navigate(Screen.EditProduct.createRoute(product.id))
-                            }
-                        )
+                    // LIST PRODUK
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .padding(horizontal = 16.dp),
+                        contentPadding = PaddingValues(
+                            bottom = 100.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+
+                        items(uiState.products) { product ->
+                            SellerProductCard(
+                                product = product,
+                                onDelete = { viewModel.showDeleteConfirmation(product.id) },
+                                onEdit = {
+                                    navController.navigate(Screen.EditProduct.createRoute(product.id))
+                                }
+                            )
+                        }
                     }
                 }
             }
 
             // Floating Action Button
-            FloatingActionButton(
-                onClick = { navController.navigate(Screen.AddProduct.route) },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp),
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Product",
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
+            if (!uiState.isLoading) {
+                // When called from SellerParentScreen, FAB needs to be above the parent's bottom nav
+                // Since this screen is inside a rounded surface, we need more bottom padding
+                val bottomPadding = if (parentNavController != null) 110.dp else 16.dp
+
+                FloatingActionButton(
+                    onClick = {
+                        if (parentNavController != null) {
+                            parentNavController.navigate(Screen.AddProduct.route)
+                        } else {
+                            navController.navigate(Screen.AddProduct.route)
+                        }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(
+                            end = 16.dp,
+                            bottom = bottomPadding
+                        ),
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Product",
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+
             }
 
             // Delete Confirmation Dialog

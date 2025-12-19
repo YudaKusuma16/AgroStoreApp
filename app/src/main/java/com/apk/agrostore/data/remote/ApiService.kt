@@ -4,6 +4,9 @@ import com.apk.agrostore.domain.model.CartItem
 import com.apk.agrostore.domain.model.Order
 import com.apk.agrostore.domain.model.Product
 import com.apk.agrostore.domain.model.User
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -44,7 +47,7 @@ interface ApiService {
     @PUT("products/show.php")
     suspend fun updateProduct(
         @Query("id") id: String,
-        @Body product: Product
+        @Body product: ProductUpdateRequest
     ): Response<ApiResponse>
 
     @DELETE("products/show.php")
@@ -59,10 +62,22 @@ interface ApiService {
         @Query("user_id") userId: String
     ): Response<List<OrderResponse>>
 
+    @GET("orders/seller.php")
+    suspend fun getSellerOrders(
+        @Query("seller_id") sellerId: String
+    ): Response<List<OrderResponse>>
+
     @POST("orders/index.php")
     suspend fun createOrder(
         @Body request: CreateOrderRequest
     ): Response<CreateOrderResponse>
+
+    // Image upload endpoint
+    @Multipart
+    @POST("upload_image.php")
+    suspend fun uploadImage(
+        @Part image: MultipartBody.Part
+    ): Response<ImageUploadResponse>
 }
 
 // Request/Response data classes
@@ -144,7 +159,9 @@ data class OrderResponse(
     val shipping_address: String?,
     val payment_method: String?,
     val created_at: String,
-    val items: List<OrderItemResponse>
+    val items: List<OrderItemResponse>,
+    val buyer_name: String? = null,
+    val buyer_id: String? = null
 )
 
 data class OrderItemResponse(
@@ -157,4 +174,22 @@ data class OrderItemResponse(
 
 data class ErrorResponse(
     val error: String
+)
+
+// Image upload response
+data class ImageUploadResponse(
+    val message: String,
+    val filename: String,
+    val url: String
+)
+
+// Request model for product update (uses camelCase for API compatibility)
+data class ProductUpdateRequest(
+    val name: String,
+    val category: String,
+    val price: Double,
+    val description: String,
+    val stock: Int,
+    val imageUrl: String = "",
+    val sellerId: String
 )

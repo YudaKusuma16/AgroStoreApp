@@ -9,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import android.util.Log
+import java.io.File
 import javax.inject.Inject
 
 /**
@@ -48,6 +49,14 @@ class EditProductViewModel @Inject constructor(
 
     private val _originalProduct = MutableStateFlow<Product?>(null)
     val originalProduct: StateFlow<Product?> = _originalProduct.asStateFlow()
+
+    // Track selected image URI for upload
+    private val _selectedImagePath = MutableStateFlow<String?>(null)
+    val selectedImagePath: StateFlow<String?> = _selectedImagePath.asStateFlow()
+
+    // Track upload state
+    private val _isUploadingImage = MutableStateFlow(false)
+    val isUploadingImage: StateFlow<Boolean> = _isUploadingImage.asStateFlow()
 
     init {
         loadProduct()
@@ -144,6 +153,46 @@ class EditProductViewModel @Inject constructor(
     }
 
     /**
+     * Select image and upload to server.
+     */
+    fun selectAndUploadImage(imagePath: String) {
+        _selectedImagePath.value = imagePath
+
+        viewModelScope.launch {
+            _isUploadingImage.value = true
+
+            try {
+                repository.uploadImage(imagePath).collect { result ->
+                    if (result.isSuccess) {
+                        _imageUrl.value = result.getOrNull() ?: ""
+                        Log.d("EditProductViewModel", "Image uploaded: ${_imageUrl.value}")
+                    } else {
+                        Log.e("EditProductViewModel", "Failed to upload image", result.exceptionOrNull())
+                        _uiState.value = _uiState.value.copy(
+                            error = "Failed to upload image: ${result.exceptionOrNull()?.message}"
+                        )
+                    }
+                    _isUploadingImage.value = false
+                }
+            } catch (e: Exception) {
+                Log.e("EditProductViewModel", "Error uploading image", e)
+                _uiState.value = _uiState.value.copy(
+                    error = "Error uploading image: ${e.message}"
+                )
+                _isUploadingImage.value = false
+            }
+        }
+    }
+
+    /**
+     * Clear selected image.
+     */
+    fun clearSelectedImage() {
+        _selectedImagePath.value = null
+        _imageUrl.value = ""
+    }
+
+    /**
      * Validate and update product.
      */
     fun updateProduct() {
@@ -200,6 +249,7 @@ class EditProductViewModel @Inject constructor(
                 )
 
                 Log.d("EditProductViewModel", "Updating product: $productId")
+                Log.d("EditProductViewModel", "Product data: ${updatedProduct}")
 
                 // Use proper updateProduct method
                 repository.updateProduct(updatedProduct).collect { result ->

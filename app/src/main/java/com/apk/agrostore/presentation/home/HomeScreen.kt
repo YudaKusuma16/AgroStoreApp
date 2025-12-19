@@ -14,16 +14,22 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material3.*
+import android.util.Log
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import com.apk.agrostore.presentation.common.ProductCard
 import com.apk.agrostore.presentation.navigation.Screen
 
@@ -34,8 +40,16 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val searchQuery by remember { mutableStateOf("") }
-    var searchJob by remember { mutableStateOf<Job?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
+
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.isBlank()) {
+            viewModel.clearSearch()
+        } else {
+            delay(300)
+            viewModel.searchProducts(searchQuery)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -43,7 +57,8 @@ fun HomeScreen(
                 title = {
                     Text(
                         text = "AgroStore",
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold
                     )
                 },
                 actions = {
@@ -56,16 +71,16 @@ fun HomeScreen(
                     }
                     IconButton(onClick = { navController.navigate(Screen.Cart.route) }) {
                         Icon(
-                            imageVector = Icons.Default.ShoppingCart,
-                            contentDescription = "Cart",
-                            tint = MaterialTheme.colorScheme.onPrimary
+                            Icons.Default.ShoppingCart,
+                            contentDescription = null,
+                            tint = Color.White
                         )
                     }
                     IconButton(onClick = { navController.navigate(Screen.Profile.route) }) {
                         Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Profile",
-                            tint = MaterialTheme.colorScheme.onPrimary
+                            Icons.Default.AccountCircle,
+                            contentDescription = null,
+                            tint = Color.White
                         )
                     }
                 },
@@ -75,97 +90,110 @@ fun HomeScreen(
             )
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = Color.White,
+                tonalElevation = 10.dp
+            ) {
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.ShoppingCart, contentDescription = null) },
-                    label = { Text("Beranda") },
                     selected = true,
-                    onClick = { /* Already on home */ }
+                    onClick = {},
+                    icon = { Icon(Icons.Default.Home, null) },
+                    label = { Text("Beranda") },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        unselectedIconColor = Color.Gray,
+                        unselectedTextColor = Color.Gray,
+                        indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                    )
                 )
                 NavigationBarItem(
-                    icon = { Icon(Icons.Default.Chat, contentDescription = null) },
-                    label = { Text("HealthBot") },
                     selected = false,
-                    onClick = { navController.navigate(Screen.HealthBot.route) }
+                    onClick = { navController.navigate(Screen.HealthBot.route) },
+                    icon = { Icon(Icons.Default.Chat, null) },
+                    label = { Text("HealthBot") },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        unselectedIconColor = Color.Gray,
+                        unselectedTextColor = Color.Gray,
+                        indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                    )
                 )
             }
         }
     ) { paddingValues ->
-        Column(
+
+        // BACKGROUND HIJAU
+        Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp)
+                .padding(paddingValues), // Memastikan konten tidak tertutup TopBar & BottomBar
+            color = MaterialTheme.colorScheme.primary
         ) {
-            // Search Bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { newQuery ->
-                    searchJob?.cancel()
-                    if (newQuery.isBlank()) {
-                        viewModel.clearSearch()
-                    } else {
-                        searchJob = viewModel.searchProducts(newQuery)
-                    }
-                },
-                placeholder = { Text("Cari produk pertanian...") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = null
+            // CARD PUTIH DENGAN RADIUS
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                color = MaterialTheme.colorScheme.background
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp) // Padding kiri-kanan untuk Column
+                ) {
+
+                    // Jarak atas setelah lengkungan kartu putih
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // SEARCH BAR
+                    TextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = { Text("Cari produk pertanian...") },
+                        leadingIcon = { Icon(Icons.Default.Search, null) },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        singleLine = true
                     )
-                },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                keyboardActions = KeyboardActions(
-                    onSearch = {
-                        if (searchQuery.isNotBlank()) {
-                            viewModel.searchProducts(searchQuery)
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (uiState.isLoading) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
                         }
-                    }
-                )
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Products Grid
-            if (uiState.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            } else if (uiState.products.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (searchQuery.isBlank()) "Belum ada produk"
-                              else "Tidak ada produk yang ditemukan",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    contentPadding = PaddingValues(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(uiState.products) { product ->
-                        ProductCard(
-                            product = product,
-                            onClick = {
-                                navController.navigate(
-                                    Screen.DetailProduct.createRoute(product.id)
+                    } else {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            // Memberikan padding ekstra di bagian bawah agar item terakhir bisa di-scroll melewati navbar
+                            contentPadding = PaddingValues(bottom = 32.dp, top = 8.dp)
+                        ) {
+                            items(uiState.products) { product ->
+                                ProductCard(
+                                    product = product,
+                                    onClick = {
+                                        navController.navigate(
+                                            Screen.DetailProduct.createRoute(product.id)
+                                        )
+                                    }
                                 )
                             }
-                        )
+                        }
                     }
                 }
             }
